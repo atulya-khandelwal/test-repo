@@ -1,0 +1,75 @@
+const express = require('express');
+const { createTodo, updateTodo } = require('./types');
+const Todo = require('./db'); // Importing Todo model from db.js
+const app = express();
+
+app.use(express.json());
+const PORT = 3001;
+
+app.post('/todo', async (req, res) => {
+    const createPayload = req.body;
+    const parsePayload = createTodo.safeParse(createPayload);
+    if (!parsePayload.success) {
+        res.status(411).json({
+            msg: "You sent the wrong inputs"
+        });
+        return;
+    }
+    try {
+        await Todo.create({
+            title: createPayload.title,
+            description: createPayload.description,
+            completed: false
+        });
+
+        res.json({
+            msg: "Todo created"
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/todos', async (req, res) => {
+    try {
+        const todos = await Todo.find();
+        res.json({ todos });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/completed', async (req, res) => {
+    const updatePayload = req.body;
+    const parsePayload = updateTodo.safeParse(updatePayload);
+    if (!parsePayload.success) {
+        res.status(411).json({
+            msg: "You sent the wrong inputs"
+        });
+        return;
+    }
+    try {
+        await Todo.updateOne({ _id: req.body.id }, { completed: true });
+        res.json({ msg: "Todo updated" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.listen(PORT, () => console.log(`Server is running on port no: ${PORT}`));
+
+
+
+
+const todoSchema = new mongoose.Schema({
+    title: String,
+    description: String,
+    completed: {
+        type: Boolean,
+        default: false
+    }
+});
+
+const Todo = mongoose.model('Todo', todoSchema); // Changed model name to 'Todo'
+
+module.exports = Todo;
